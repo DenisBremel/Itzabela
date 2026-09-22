@@ -1,0 +1,14 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+*.log
+
+# Configuracion local del editor / asistente
+.claude/
+
+# Variables de entorno: nunca al repositorio
+.env
+.env.*
+!.env.example

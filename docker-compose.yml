@@ -1,0 +1,18 @@
+# Uso local: probar la imagen de producción antes de subirla.
+#   docker compose up --build
+#   -> http://localhost:8080
+#
+# En Dokploy NO se usa este archivo: allí se elige "Dockerfile"
+# y las variables se ponen en Build Arguments.
+services:
+  web:
+    build:
+      context: .
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+        VITE_WHATSAPP_NUMBER: ${VITE_WHATSAPP_NUMBER:-51935826674}
+        VITE_SITE_URL: ${VITE_SITE_URL:-https://itzabela.com}
+    ports:
+      - '8080:80'
+    restart: unless-stopped

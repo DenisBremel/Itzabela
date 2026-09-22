@@ -1,0 +1,172 @@
+@import 'tailwindcss';
+
+/* Tipografías autoalojadas: no dependemos de Google Fonts en runtime. */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/cormorant-garamond';
+
+/* ============================================================
+   IDENTIDAD VISUAL — Itzabela
+   ------------------------------------------------------------
+   Paleta pensada para una florería: femenina, cálida y elegante.
+     rose   → rosa profundo (color principal de marca)
+     sage   → verde salvia (follaje, botones secundarios)
+     cream  → fondos cálidos que descansan la vista
+     stone  → grises tibios para el texto
+   ============================================================ */
+
+@theme {
+  /* Cuerpo de texto: Inter. Títulos: Cormorant Garamond (serif elegante). */
+  --font-sans:
+    'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display:
+    'Cormorant Garamond Variable', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+
+  /* Rosa de marca */
+  --color-rose-50: #fdf2f6;
+  --color-rose-100: #fce7ef;
+  --color-rose-200: #fbcfdf;
+  --color-rose-300: #f7a8c4;
+  --color-rose-400: #f073a2;
+  --color-rose-500: #e34a83;
+  --color-rose-600: #cf2a68;
+  --color-rose-700: #b23a6b;
+  --color-rose-800: #92194d;
+  --color-rose-900: #7a1943;
+  --color-rose-950: #470922;
+
+  /* Verde salvia (follaje) */
+  --color-sage-50: #f4f7f3;
+  --color-sage-100: #e5ede2;
+  --color-sage-200: #cbdcc6;
+  --color-sage-300: #a6c29f;
+  --color-sage-400: #7ba372;
+  --color-sage-500: #5a8752;
+  --color-sage-600: #456b3f;
+  --color-sage-700: #385534;
+  --color-sage-800: #2e452c;
+  --color-sage-900: #273a26;
+
+  /* Nude/blush: fondo suave de la portada y la franja superior */
+  --color-blush-50: #fdf7f4;
+  --color-blush-100: #f6e7e0;
+  --color-blush-200: #eed7cd;
+  --color-blush-300: #e3c2b5;
+
+  /* Fondos cálidos */
+  --color-cream-50: #fffdfb;
+  --color-cream-100: #fdf8f4;
+  --color-cream-200: #f9efe7;
+  --color-cream-300: #f2e0d3;
+
+  /* Sombras suaves, nunca duras */
+  --shadow-card: 0 1px 2px rgb(71 9 34 / 0.04), 0 8px 24px -12px rgb(71 9 34 / 0.16);
+  --shadow-card-hover: 0 2px 4px rgb(71 9 34 / 0.06), 0 18px 40px -16px rgb(71 9 34 / 0.26);
+  --shadow-header: 0 1px 0 rgb(71 9 34 / 0.05), 0 6px 20px -12px rgb(71 9 34 / 0.2);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-blush-100 font-sans text-stone-600 antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display text-stone-900;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-rose-600;
+  }
+
+  /* El header es fijo: evitamos que tape los títulos al saltar a una sección */
+  section[id] {
+    scroll-margin-top: 5.5rem;
+  }
+
+  img {
+    @apply max-w-full;
+  }
+}
+
+@layer components {
+  /* Aparición suave al hacer scroll (ver hooks/useReveal.ts).
+     Solo se activa si hay JavaScript (clase `js` en <html>), así el
+     contenido nunca queda oculto para buscadores o navegadores sin JS. */
+  .js .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 0.6s ease-out,
+      transform 0.6s ease-out;
+    will-change: opacity, transform;
+  }
+
+  .js .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Degradado de marca reutilizable (hero y banners) */
+  .bg-rose-gradient {
+    background-image: linear-gradient(135deg, #470922 0%, #92194d 55%, #cf2a68 100%);
+  }
+
+  /* Textura de pétalos muy sutil sobre fondos oscuros */
+  .petal-pattern {
+    background-image:
+      radial-gradient(circle at 20% 25%, rgb(255 255 255 / 0.07) 0 12px, transparent 13px),
+      radial-gradient(circle at 70% 60%, rgb(255 255 255 / 0.05) 0 18px, transparent 19px);
+    background-size: 180px 180px;
+  }
+
+  /* Entrada de los avisos flotantes (ver components/ui/Toast.tsx) */
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* La misma textura, en versión clara: para fondos nude */
+  .petal-pattern-soft {
+    background-image:
+      radial-gradient(circle at 20% 25%, rgb(178 58 107 / 0.05) 0 12px, transparent 13px),
+      radial-gradient(circle at 70% 60%, rgb(178 58 107 / 0.04) 0 18px, transparent 19px);
+    background-size: 180px 180px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
