@@ -95,7 +95,7 @@ export const FAQ: readonly FaqItem[] = [
   {
     question: '¿Cómo pago mi pedido?',
     answer:
-      'El pago se coordina por WhatsApp: aceptamos Yape, Plin, transferencia bancaria y efectivo contra entrega dentro de la ciudad.',
+      'El pago se coordina por WhatsApp: aceptamos Yape, Plin, transferencia bancaria y efectivo contra entrega dentro de la ciudad de Tingo María.',
   },
   {
     question: '¿Puedo pedir un arreglo que no está en el catálogo?',
