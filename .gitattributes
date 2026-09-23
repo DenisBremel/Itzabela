@@ -1,0 +1,7 @@
+# Normalizacion de saltos de linea.
+# Los scripts y la configuracion de nginx se ejecutan en Linux:
+# con saltos de Windows el contenedor falla con "bad interpreter".
+* text=auto eol=lf
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.conf text eol=lf
