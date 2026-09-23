@@ -8,7 +8,6 @@ import { ProductRow } from './ProductRow';
 import { ProductForm } from './ProductForm';
 import { useProducts } from '@/hooks/useProducts';
 import { useIdleLogout } from '@/hooks/useIdleLogout';
-import { importSeedProducts } from '@/services/productService';
 import { SHOP } from '@/constants/shop';
 import { MAX_FEATURED, type Product } from '@/types/product';
 
@@ -28,7 +27,6 @@ export function AdminPanel({ email, onSignOut }: AdminPanelProps): JSX.Element {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
 
   // Un celular olvidado en el mostrador no debe quedar con el panel
   // abierto: a los 15 minutos sin actividad se cierra la sesión.
@@ -60,20 +58,6 @@ export function AdminPanel({ email, onSignOut }: AdminPanelProps): JSX.Element {
   function openEdit(product: Product): void {
     setEditing(product);
     setIsFormOpen(true);
-  }
-
-  /** Copia el catálogo de ejemplo a Supabase la primera vez. */
-  async function handleImport(): Promise<void> {
-    setIsImporting(true);
-    try {
-      const total = await importSeedProducts();
-      reload();
-      toast.success(`Se importaron ${total} productos de ejemplo.`);
-    } catch (cause: unknown) {
-      toast.error(cause instanceof Error ? cause.message : 'No se pudo importar el catálogo.');
-    } finally {
-      setIsImporting(false);
-    }
   }
 
   return (
@@ -147,20 +131,12 @@ export function AdminPanel({ email, onSignOut }: AdminPanelProps): JSX.Element {
               <Icon name="flower" size={36} className="mx-auto text-rose-300" />
               <p className="mt-4 font-medium text-stone-800">Tu catálogo está vacío</p>
               <p className="mt-1 text-sm text-stone-600">
-                Puedes crear los productos uno a uno o empezar con los doce de ejemplo y editarlos.
+                Crea tu primer producto y aparecerá en la tienda al instante.
               </p>
-              <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+              <div className="mt-6 flex justify-center">
                 <Button onClick={openNew}>
                   <Icon name="plus" size={18} />
                   Crear el primero
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => void handleImport()}
-                  disabled={isImporting}
-                >
-                  <Icon name="box" size={18} />
-                  {isImporting ? 'Importando…' : 'Importar catálogo de ejemplo'}
                 </Button>
               </div>
             </div>

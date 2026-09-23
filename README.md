@@ -57,8 +57,7 @@ Una sola vez, y es gratis:
    VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
    ```
 
-5. Reinicia `bun dev`, entra a `/admin` y pulsa **Importar catálogo de ejemplo** para
-   cargar los doce productos de muestra y empezar a editarlos.
+5. Reinicia `bun dev`, entra a `/admin` y crea tus productos.
 
 > La clave *anon* es pública a propósito: viaja al navegador de cualquier visitante. Lo
 > que protege el catálogo son las políticas RLS de `supabase/schema.sql`: sin sesión

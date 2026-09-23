@@ -146,20 +146,4 @@ export async function deleteProduct(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-/**
- * Copia el catálogo de ejemplo a Supabase.
- * Útil solo la primera vez, cuando la tabla está vacía.
- */
-export async function importSeedProducts(): Promise<number> {
-  const client = requireSupabase();
-  const rows = SEED_PRODUCTS.map((product) => {
-    const { id: _ignored, ...rest } = product;
-    return toRow(rest);
-  });
-
-  const { data, error } = await client.from(TABLE).insert(rows).select('id');
-  if (error) throw new Error(error.message);
-  return (data as { id: string }[]).length;
-}
-
 export { isSupabaseConfigured };
