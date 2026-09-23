@@ -9,6 +9,12 @@
 
     <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
 
+    <!-- Configuracion del servidor. El contenedor reescribe este
+         archivo al arrancar; en desarrollo esta vacio y manda .env.
+         Va sin "defer" y antes del modulo: debe estar listo cuando
+         arranque la aplicacion. -->
+    <script src="/config.js"></script>
+
     <title>Itzabela | Flores eternas en Tingo María</title>
     <meta
       name="description"

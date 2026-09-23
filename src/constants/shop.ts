@@ -12,7 +12,7 @@
  * ============================================================
  */
 
-const env = import.meta.env;
+import { config } from '@/lib/config';
 
 /** Deja solo dígitos: WhatsApp no acepta espacios ni símbolos. */
 const onlyDigits = (value: string): string => value.replace(/\D/g, '');
@@ -30,15 +30,15 @@ export const SHOP = {
     'girasoles y diseños personalizados hechos con mucho amor.',
 
   /** Dominio final, sin barra al final */
-  siteUrl: (env.VITE_SITE_URL ?? 'https://itzabela.com').replace(/\/$/, ''),
+  siteUrl: config('VITE_SITE_URL', 'https://itzabela.com').replace(/\/$/, ''),
 
   // --- Contacto ------------------------------------------------
   /** WhatsApp: código de país + número, solo dígitos */
-  whatsapp: onlyDigits(env.VITE_WHATSAPP_NUMBER ?? '51935826674'),
+  whatsapp: onlyDigits(config('VITE_WHATSAPP_NUMBER', '51935826674')),
   /** Teléfono tal como se muestra al cliente */
-  phoneDisplay: env.VITE_PHONE_DISPLAY ?? '+51 935 826 674',
+  phoneDisplay: config('VITE_PHONE_DISPLAY', '+51 935 826 674'),
   /** Correo (déjalo vacío si no quieres mostrarlo) */
-  email: env.VITE_CONTACT_EMAIL ?? '',
+  email: config('VITE_CONTACT_EMAIL'),
 
   // --- Operación -----------------------------------------------
   schedule: 'Todos los días, 8:00 a 21:00',

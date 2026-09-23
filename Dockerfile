@@ -54,6 +54,10 @@ COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 COPY --from=build /app/dist /usr/share/nginx/html
 
+# Escribe /config.js con las variables del servidor antes de arrancar.
+COPY docker/entrypoint.sh /docker-entrypoint.d/99-itzabela-config.sh
+RUN chmod +x /docker-entrypoint.d/99-itzabela-config.sh
+
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

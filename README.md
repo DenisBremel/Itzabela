@@ -117,8 +117,7 @@ El proyecto trae `Dockerfile` listo. La imagen compila con bun y sirve el result
 nginx; pesa unos 50 MB y no lleva código fuente.
 
 1. En Dokploy: **Create Application** → tipo **Dockerfile** → apunta al repositorio.
-2. En **Build Arguments**, añade estas variables. Es obligatorio que vayan aquí y no en
-   Environment: Vite las incrusta al compilar, no al arrancar el contenedor.
+2. En la pestaña **Environment**, añade estas variables:
 
    ```ini
    VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
@@ -134,8 +133,13 @@ nginx; pesa unos 50 MB y no lleva código fuente.
 El contenedor responde en `/healthz` con `ok`, que es lo que usan el `HEALTHCHECK` de
 Docker y el monitor de Dokploy.
 
-> Si cambias una clave de Supabase hay que **volver a desplegar**: al ser parte de la
-> compilación, no basta con reiniciar el contenedor.
+> Las variables se leen **al arrancar el contenedor**, no al compilar: el contenedor
+> escribe `/config.js` con ellas y el navegador lo carga antes que la aplicación (ver
+> `docker/entrypoint.sh` y `src/lib/config.ts`). Por eso, para cambiar una clave basta
+> con guardar y **reiniciar**, sin reconstruir la imagen.
+>
+> Se hizo así porque Vite congela las variables al compilar, y los paneles de despliegue
+> suelen entregarlas al contenedor *después* de construir la web: nunca las vería.
 
 Para probar la imagen en tu máquina antes de subirla:
 

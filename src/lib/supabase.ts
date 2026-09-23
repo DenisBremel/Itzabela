@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { config } from './config';
 
 /**
  * ============================================================
@@ -14,8 +15,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
  * ============================================================
  */
 
-const url = import.meta.env.VITE_SUPABASE_URL ?? '';
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
+const url = config('VITE_SUPABASE_URL');
+const anonKey = config('VITE_SUPABASE_ANON_KEY');
 
 /** ¿Están las dos variables de entorno puestas? */
 export const isSupabaseConfigured: boolean = Boolean(url && anonKey);

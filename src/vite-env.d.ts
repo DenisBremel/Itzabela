@@ -13,3 +13,11 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/**
+ * Configuracion inyectada por el contenedor en /config.js.
+ * Ver src/lib/config.ts y docker/entrypoint.sh.
+ */
+interface Window {
+  __ITZABELA_CONFIG__?: Record<string, string>;
+}
