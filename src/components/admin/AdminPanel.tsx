@@ -8,6 +8,7 @@ import { ProductRow } from './ProductRow';
 import { ProductForm } from './ProductForm';
 import { useProducts } from '@/hooks/useProducts';
 import { useIdleLogout } from '@/hooks/useIdleLogout';
+import { downloadCatalogPdf } from '@/services/catalogPdf';
 import { SHOP } from '@/constants/shop';
 import { MAX_FEATURED, type Product } from '@/types/product';
 
@@ -27,6 +28,7 @@ export function AdminPanel({ email, onSignOut }: AdminPanelProps): JSX.Element {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Un celular olvidado en el mostrador no debe quedar con el panel
   // abierto: a los 15 minutos sin actividad se cierra la sesión.
@@ -60,6 +62,19 @@ export function AdminPanel({ email, onSignOut }: AdminPanelProps): JSX.Element {
     setIsFormOpen(true);
   }
 
+  /** Arma el PDF del catálogo para mandarlo por WhatsApp. */
+  async function handleExport(): Promise<void> {
+    setIsExporting(true);
+    try {
+      const total = await downloadCatalogPdf(products);
+      toast.success(`Catálogo listo con ${total} productos.`);
+    } catch (cause: unknown) {
+      toast.error(cause instanceof Error ? cause.message : 'No se pudo generar el catálogo.');
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-blush-100 pb-20">
       {/* Cabecera del panel */}
@@ -73,6 +88,16 @@ export function AdminPanel({ email, onSignOut }: AdminPanelProps): JSX.Element {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void handleExport()}
+              disabled={isExporting}
+              title="Descarga el catálogo en PDF para mandarlo por WhatsApp"
+              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+            >
+              <Icon name="download" size={18} />
+              {isExporting ? 'Generando…' : 'Catálogo PDF'}
+            </button>
             <Link
               to="/"
               className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-rose-50 hover:text-rose-700"

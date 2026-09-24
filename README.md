@@ -7,7 +7,9 @@ la conversación sigue por WhatsApp. El stock lo controlas tú desde un panel pr
 - **Privado:** `/admin`, con correo y contraseña, para cambiar stock, precios y fotos.
   La sesión se cierra sola tras 15 minutos sin actividad.
 - **Agotado:** cuando el stock llega a 0, la foto se atenúa y aparece **AGOTADO** en el
-  centro; el botón cambia a "Avísame cuando llegue" (también por WhatsApp).
+  centro; el botón cambia a "Quiero este modelo" (también por WhatsApp).
+- **Catálogo en PDF:** desde el panel, con las fotos incrustadas para poder verlo sin
+  internet. Solo entran los productos visibles y con stock.
 
 ## Tecnologías
 
