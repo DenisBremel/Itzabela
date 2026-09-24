@@ -13,6 +13,8 @@ interface ProductCardProps {
   product: Product;
   /** Carga la imagen con prioridad (solo para las primeras de la portada). */
   eager?: boolean;
+  /** Abre la foto en grande. */
+  onZoom: (product: Product) => void;
 }
 
 /**
@@ -21,16 +23,23 @@ interface ProductCardProps {
  * Reglas de negocio que se ven aquí:
  *  - Si hay stock, el botón "Comprar" abre WhatsApp con el pedido escrito.
  *  - Si no hay stock, la foto se atenúa, aparece AGOTADO en el centro y
- *    el botón cambia a "Avísame cuando llegue" (también por WhatsApp).
+ *    el botón cambia a "Quiero este modelo" (también por WhatsApp).
+ *  - La foto se pulsa para verla en grande.
  */
-export function ProductCard({ product, eager = false }: ProductCardProps): JSX.Element {
+export function ProductCard({ product, eager = false, onZoom }: ProductCardProps): JSX.Element {
   const available = isAvailable(product);
   const isLowStock = available && product.stock <= LOW_STOCK_THRESHOLD;
 
   return (
     <article className="reveal group flex flex-col overflow-hidden rounded-3xl border border-rose-200 bg-blush-100 shadow-card transition-shadow duration-300 hover:shadow-card-hover">
-      {/* Imagen + estado */}
-      <div className="relative aspect-4/5 overflow-hidden bg-rose-50">
+      {/* Imagen + estado. Al pulsarla se ve en grande: es lo que más
+          ayuda a decidir cuando el producto entra por los ojos. */}
+      <button
+        type="button"
+        onClick={() => onZoom(product)}
+        aria-label={`Ver ${product.name} en grande`}
+        className="group/foto relative block aspect-4/5 w-full cursor-zoom-in overflow-hidden bg-rose-50"
+      >
         <img
           src={product.imageUrl}
           alt={product.name}
@@ -57,7 +66,13 @@ export function ProductCard({ product, eager = false }: ProductCardProps): JSX.E
             {product.stock === 1 ? 'Última unidad' : `Quedan ${product.stock}`}
           </span>
         )}
-      </div>
+
+        {/* Pista de que la foto se amplía. En el celular no hay ratón,
+            así que se muestra siempre y con poca opacidad. */}
+        <span className="absolute bottom-3 left-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-rose-700 opacity-70 backdrop-blur-sm transition-opacity group-hover/foto:opacity-100">
+          <Icon name="zoom" size={18} />
+        </span>
+      </button>
 
       {/* Datos y acción */}
       <div className="flex flex-1 flex-col p-5">

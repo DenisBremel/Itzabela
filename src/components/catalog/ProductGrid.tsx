@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
+import { useState, type JSX } from 'react';
 import { ProductCard } from './ProductCard';
+import { ProductLightbox } from './ProductLightbox';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 import { buildWhatsAppUrl } from '@/utils/whatsapp';
@@ -34,6 +35,8 @@ export function ProductGrid({
   error = null,
   emptyMessage = 'No hay productos en esta categoría por ahora.',
 }: ProductGridProps): JSX.Element {
+  const [zoomed, setZoomed] = useState<Product | null>(null);
+
   if (isLoading) {
     return (
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -73,10 +76,19 @@ export function ProductGrid({
   }
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {products.map((product, index) => (
-        <ProductCard key={product.id} product={product} eager={index < 4} />
-      ))}
-    </div>
+    <>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {products.map((product, index) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            eager={index < 4}
+            onZoom={setZoomed}
+          />
+        ))}
+      </div>
+
+      {zoomed && <ProductLightbox product={zoomed} onClose={() => setZoomed(null)} />}
+    </>
   );
 }

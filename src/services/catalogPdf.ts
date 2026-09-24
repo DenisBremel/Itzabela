@@ -20,16 +20,22 @@ import { isAvailable, type Product } from '@/types/product';
 // --- Medidas de la hoja, en milímetros -----------------------
 const PAGE = { width: 210, height: 297 };
 const MARGIN = 12;
-const COLUMNS = 2;
-const COLUMN_GAP = 8;
+const COLUMNS = 3;
+const COLUMN_GAP = 6;
 const CONTENT_WIDTH = PAGE.width - MARGIN * 2;
 const CARD_WIDTH = (CONTENT_WIDTH - COLUMN_GAP * (COLUMNS - 1)) / COLUMNS;
-const IMAGE_HEIGHT = 60;
-const CARD_HEIGHT = 88;
+
+/**
+ * Las fotos van verticales 4:5, la misma proporción que las tarjetas de
+ * la web. Con un hueco apaisado el recorte se comía el ramo por arriba
+ * y por abajo, que es justo lo que hay que enseñar.
+ */
+const IMAGE_HEIGHT = CARD_WIDTH * 1.25;
+const CARD_HEIGHT = 102;
 const FOOTER_HEIGHT = 12;
 
 /** Ancho en píxeles al que se reducen las fotos antes de incrustarlas. */
-const IMAGE_PIXEL_WIDTH = 620;
+const IMAGE_PIXEL_WIDTH = 460;
 
 /** Colores de marca, en RGB. */
 const ROSE = [178, 58, 107] as const;
@@ -155,13 +161,12 @@ export async function downloadCatalogPdf(products: Product[]): Promise<number> {
 
   doc.setFontSize(9);
   doc.setTextColor(...GREY);
-  doc.text(
-    `WhatsApp ${SHOP.phoneDisplay} · ${SHOP.siteUrl.replace(/^https?:\/\//, '')}`,
-    center,
-    cursorY + 22,
-  { align: 'center' });
+  doc.text(`WhatsApp ${SHOP.phoneDisplay}`, center, cursorY + 22, { align: 'center' });
+  // El dominio va completo y en su propia línea: así se puede copiar
+  // o teclear tal cual desde una hoja impresa.
+  doc.text(SHOP.siteUrl, center, cursorY + 27, { align: 'center' });
 
-  cursorY += 30;
+  cursorY += 35;
   doc.setDrawColor(238, 215, 205);
   doc.line(MARGIN, cursorY, PAGE.width - MARGIN, cursorY);
   cursorY += 8;
@@ -185,33 +190,39 @@ export async function downloadCatalogPdf(products: Product[]): Promise<number> {
       // Hueco discreto en vez de un salto raro en la maqueta.
       doc.setFillColor(250, 240, 236);
       doc.rect(x, cursorY, CARD_WIDTH, IMAGE_HEIGHT, 'F');
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       doc.setTextColor(...GREY);
       doc.text('Sin foto', x + CARD_WIDTH / 2, cursorY + IMAGE_HEIGHT / 2, { align: 'center' });
     }
 
-    let textY = cursorY + IMAGE_HEIGHT + 6;
+    // El texto fluye pegado a SU foto. Antes el precio iba clavado al
+    // fondo de la tarjeta y acababa junto a la imagen de la fila
+    // siguiente: parecía el precio del producto de abajo.
+    let textY = cursorY + IMAGE_HEIGHT + 5;
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(...STONE);
-    // Solo dos líneas de nombre: más desbordaría la tarjeta.
-    doc.text(doc.splitTextToSize(product.name, CARD_WIDTH).slice(0, 2), x, textY);
-
-    textY += product.name.length > 34 ? 10 : 5;
+    const nameLines = doc.splitTextToSize(product.name, CARD_WIDTH).slice(0, 2);
+    doc.text(nameLines, x, textY);
+    textY += nameLines.length * 4;
 
     if (product.description) {
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       doc.setTextColor(...GREY);
-      doc.text(doc.splitTextToSize(product.description, CARD_WIDTH).slice(0, 2), x, textY);
-      textY += 8;
+      const descriptionLines = doc
+        .splitTextToSize(product.description, CARD_WIDTH)
+        .slice(0, 2);
+      textY += 1.5;
+      doc.text(descriptionLines, x, textY);
+      textY += descriptionLines.length * 3.2;
     }
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
+    doc.setFontSize(12);
     doc.setTextColor(...ROSE);
-    doc.text(formatPrice(product.price), x, cursorY + CARD_HEIGHT - 3);
+    doc.text(formatPrice(product.price), x, textY + 5.5);
 
     column += 1;
     if (column === COLUMNS) {
