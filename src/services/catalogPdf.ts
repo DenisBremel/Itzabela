@@ -42,13 +42,13 @@ interface EmbeddedImage {
 }
 
 /**
- * Descarga una foto y la deja lista para el PDF: recortada a la
- * proporción de la tarjeta y reducida de tamaño.
+ * Descarga una imagen y la deja lista para el PDF: recortada a la
+ * proporción pedida y reducida de tamaño.
  *
  * Devuelve null si la foto no se puede cargar (enlace roto, permisos):
  * un producto sin foto no debe impedir generar el catálogo entero.
  */
-async function embedImage(url: string): Promise<EmbeddedImage | null> {
+async function embedImage(url: string, targetRatio: number): Promise<EmbeddedImage | null> {
   return new Promise((resolve) => {
     const image = new Image();
     // Sin esto el navegador "mancha" el lienzo y no deja exportarlo.
@@ -56,7 +56,6 @@ async function embedImage(url: string): Promise<EmbeddedImage | null> {
 
     image.onload = () => {
       try {
-        const targetRatio = CARD_WIDTH / IMAGE_HEIGHT;
         const width = IMAGE_PIXEL_WIDTH;
         const height = Math.round(width / targetRatio);
 
@@ -96,15 +95,6 @@ async function embedImage(url: string): Promise<EmbeddedImage | null> {
   });
 }
 
-/** Fecha en formato legible: "24 de septiembre de 2026". */
-function today(): string {
-  return new Date().toLocaleDateString(SHOP.locale, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
 /**
  * Arma el catálogo y lo descarga.
  * Solo incluye productos visibles y con stock: el archivo va a
@@ -124,8 +114,10 @@ export async function downloadCatalogPdf(products: Product[]): Promise<number> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
 
   // El logo es opcional: si no está el archivo, la portada usa solo texto.
-  const logo = await embedImage('/images/logo.png');
-  const images = await Promise.all(visible.map((product) => embedImage(product.imageUrl)));
+  const logo = await embedImage('/images/logo.png', 1);
+  const images = await Promise.all(
+    visible.map((product) => embedImage(product.imageUrl, CARD_WIDTH / IMAGE_HEIGHT)),
+  );
 
   /** Pie de página: a quién escribir, en cada hoja. */
   const drawFooter = (page: number, total: number): void => {
@@ -136,37 +128,40 @@ export async function downloadCatalogPdf(products: Product[]): Promise<number> {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(...GREY);
-    doc.text(`Pedidos por WhatsApp ${SHOP.phoneDisplay} · ${SHOP.deliveryArea}`, MARGIN, y);
+    doc.text(`Pedidos por WhatsApp ${SHOP.phoneDisplay}`, MARGIN, y);
     doc.text(`${page} / ${total}`, PAGE.width - MARGIN, y, { align: 'right' });
   };
 
   // ---------- Portada de la primera página ----------
+  // Todo centrado: es una portada, no una cabecera de documento.
+  const center = PAGE.width / 2;
   let cursorY = MARGIN;
 
   if (logo) {
-    doc.addImage(logo.dataUrl, logo.format, MARGIN, cursorY, 26, 26 / (CARD_WIDTH / IMAGE_HEIGHT));
+    const size = 24;
+    doc.addImage(logo.dataUrl, logo.format, center - size / 2, cursorY, size, size);
+    cursorY += size + 4;
   }
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(26);
   doc.setTextColor(...ROSE);
-  doc.text(SHOP.fullName, logo ? MARGIN + 32 : MARGIN, cursorY + 10);
+  doc.text(SHOP.fullName, center, cursorY + 9, { align: 'center' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   doc.setTextColor(...STONE);
-  doc.text('Flores eternas hechas a mano', logo ? MARGIN + 32 : MARGIN, cursorY + 17);
+  doc.text('Flores eternas hechas a mano', center, cursorY + 16, { align: 'center' });
 
   doc.setFontSize(9);
   doc.setTextColor(...GREY);
   doc.text(
     `WhatsApp ${SHOP.phoneDisplay} · ${SHOP.siteUrl.replace(/^https?:\/\//, '')}`,
-    logo ? MARGIN + 32 : MARGIN,
-    cursorY + 23,
-  );
-  doc.text(`Catálogo del ${today()}`, PAGE.width - MARGIN, cursorY + 23, { align: 'right' });
+    center,
+    cursorY + 22,
+  { align: 'center' });
 
-  cursorY += 32;
+  cursorY += 30;
   doc.setDrawColor(238, 215, 205);
   doc.line(MARGIN, cursorY, PAGE.width - MARGIN, cursorY);
   cursorY += 8;
