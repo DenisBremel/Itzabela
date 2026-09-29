@@ -6,7 +6,7 @@ import { isAvailable, type Product } from '@/types/product';
  * ============================================================
  *  CATÁLOGO EN PDF
  * ============================================================
- *  Genera un PDF con fotos y precios para mandar por WhatsApp.
+ *  Genera un catálogo para mandar por WhatsApp o imprimir.
  *
  *  Las fotos van INCRUSTADAS dentro del archivo, no enlazadas:
  *  quien lo reciba puede abrirlo sin internet, que es justo para
@@ -19,28 +19,49 @@ import { isAvailable, type Product } from '@/types/product';
 
 // --- Medidas de la hoja, en milímetros -----------------------
 const PAGE = { width: 210, height: 297 };
-const MARGIN = 12;
-const COLUMNS = 3;
-const COLUMN_GAP = 6;
-const CONTENT_WIDTH = PAGE.width - MARGIN * 2;
-const CARD_WIDTH = (CONTENT_WIDTH - COLUMN_GAP * (COLUMNS - 1)) / COLUMNS;
+const MARGIN = 15;
+const FOOTER_SPACE = 14;
+const ROW_GAP = 8;
+const IMAGE_TEXT_GAP = 10;
 
 /**
- * Las fotos van verticales 4:5, la misma proporción que las tarjetas de
- * la web. Con un hueco apaisado el recorte se comía el ramo por arriba
- * y por abajo, que es justo lo que hay que enseñar.
+ * Cuántos productos entran en cada hoja.
+ * Todo el diseño se recalcula a partir de este número: cambiándolo,
+ * las fotos y el espacio del texto se ajustan solos.
  */
-const IMAGE_HEIGHT = CARD_WIDTH * 1.25;
-const CARD_HEIGHT = 102;
-const FOOTER_HEIGHT = 12;
+const PRODUCTS_PER_PAGE = 3;
 
-/** Ancho en píxeles al que se reducen las fotos antes de incrustarlas. */
-const IMAGE_PIXEL_WIDTH = 460;
+const CONTENT_WIDTH = PAGE.width - MARGIN * 2;
+
+/** Altura de la línea que separa el pie. Se usa al dibujarlo y al medir. */
+const FOOTER_LINE_Y = PAGE.height - FOOTER_SPACE - 5;
+
+/**
+ * Hasta dónde puede llegar la última foto. Deja aire sobre la línea del
+ * pie: sin este margen, la tercera imagen la tocaba y quedaba sucio.
+ */
+const CONTENT_BOTTOM = FOOTER_LINE_Y - 8;
+
+const AREA_HEIGHT = CONTENT_BOTTOM - MARGIN;
+const ROW_HEIGHT = (AREA_HEIGHT - ROW_GAP * (PRODUCTS_PER_PAGE - 1)) / PRODUCTS_PER_PAGE;
+
+/** La foto conserva el 4:5 vertical de las tarjetas de la web. */
+const IMAGE_HEIGHT = ROW_HEIGHT;
+const IMAGE_WIDTH = IMAGE_HEIGHT * 0.8;
+const TEXT_X = MARGIN + IMAGE_WIDTH + IMAGE_TEXT_GAP;
+const TEXT_WIDTH = CONTENT_WIDTH - IMAGE_WIDTH - IMAGE_TEXT_GAP;
+
+/** Renglones de descripción que caben en una fila sin pisar el precio. */
+const MAX_DESCRIPTION_LINES = 4;
+
+/** Ancho en píxeles al que se reducen las fotos. Pensado para imprimir. */
+const IMAGE_PIXEL_WIDTH = 760;
 
 /** Colores de marca, en RGB. */
 const ROSE = [178, 58, 107] as const;
 const STONE = [68, 64, 60] as const;
 const GREY = [120, 113, 108] as const;
+const FRAME = [222, 188, 175] as const;
 
 interface EmbeddedImage {
   dataUrl: string;
@@ -90,7 +111,7 @@ async function embedImage(url: string, targetRatio: number): Promise<EmbeddedIma
         context.fillRect(0, 0, width, height);
         context.drawImage(image, sx, sy, sw, sh, 0, 0, width, height);
 
-        resolve({ dataUrl: canvas.toDataURL('image/jpeg', 0.72), format: 'JPEG' });
+        resolve({ dataUrl: canvas.toDataURL('image/jpeg', 0.75), format: 'JPEG' });
       } catch {
         resolve(null);
       }
@@ -117,125 +138,161 @@ export async function downloadCatalogPdf(products: Product[]): Promise<number> {
   }
 
   const { jsPDF } = await import('jspdf');
-  const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
-
-  // El logo es opcional: si no está el archivo, la portada usa solo texto.
-  const logo = await embedImage('/images/logo.png', 1);
-  const images = await Promise.all(
-    visible.map((product) => embedImage(product.imageUrl, CARD_WIDTH / IMAGE_HEIGHT)),
-  );
-
-  /** Pie de página: a quién escribir, en cada hoja. */
-  const drawFooter = (page: number, total: number): void => {
-    const y = PAGE.height - FOOTER_HEIGHT;
-    doc.setDrawColor(238, 215, 205);
-    doc.line(MARGIN, y - 4, PAGE.width - MARGIN, y - 4);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(...GREY);
-    doc.text(`Pedidos por WhatsApp ${SHOP.phoneDisplay}`, MARGIN, y);
-    doc.text(`${page} / ${total}`, PAGE.width - MARGIN, y, { align: 'right' });
-  };
-
-  // ---------- Portada de la primera página ----------
-  // Todo centrado: es una portada, no una cabecera de documento.
-  const center = PAGE.width / 2;
-  let cursorY = MARGIN;
-
-  if (logo) {
-    const size = 24;
-    doc.addImage(logo.dataUrl, logo.format, center - size / 2, cursorY, size, size);
-    cursorY += size + 4;
-  }
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(26);
-  doc.setTextColor(...ROSE);
-  doc.text(SHOP.fullName, center, cursorY + 9, { align: 'center' });
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(...STONE);
-  doc.text('Flores eternas hechas a mano', center, cursorY + 16, { align: 'center' });
-
-  doc.setFontSize(9);
-  doc.setTextColor(...GREY);
-  doc.text(`WhatsApp ${SHOP.phoneDisplay}`, center, cursorY + 22, { align: 'center' });
-  // El dominio va completo y en su propia línea: así se puede copiar
-  // o teclear tal cual desde una hoja impresa.
-  doc.text(SHOP.siteUrl, center, cursorY + 27, { align: 'center' });
-
-  cursorY += 35;
-  doc.setDrawColor(238, 215, 205);
-  doc.line(MARGIN, cursorY, PAGE.width - MARGIN, cursorY);
-  cursorY += 8;
-
-  // ---------- Los productos ----------
-  let column = 0;
-
-  visible.forEach((product, index) => {
-    // ¿Cabe otra fila en esta hoja?
-    if (column === 0 && cursorY + CARD_HEIGHT > PAGE.height - FOOTER_HEIGHT - 6) {
-      doc.addPage();
-      cursorY = MARGIN;
-    }
-
-    const x = MARGIN + column * (CARD_WIDTH + COLUMN_GAP);
-    const picture = images[index];
-
-    if (picture) {
-      doc.addImage(picture.dataUrl, picture.format, x, cursorY, CARD_WIDTH, IMAGE_HEIGHT);
-    } else {
-      // Hueco discreto en vez de un salto raro en la maqueta.
-      doc.setFillColor(250, 240, 236);
-      doc.rect(x, cursorY, CARD_WIDTH, IMAGE_HEIGHT, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(...GREY);
-      doc.text('Sin foto', x + CARD_WIDTH / 2, cursorY + IMAGE_HEIGHT / 2, { align: 'center' });
-    }
-
-    // El texto fluye pegado a SU foto. Antes el precio iba clavado al
-    // fondo de la tarjeta y acababa junto a la imagen de la fila
-    // siguiente: parecía el precio del producto de abajo.
-    let textY = cursorY + IMAGE_HEIGHT + 5;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(...STONE);
-    const nameLines = doc.splitTextToSize(product.name, CARD_WIDTH).slice(0, 2);
-    doc.text(nameLines, x, textY);
-    textY += nameLines.length * 4;
-
-    if (product.description) {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(...GREY);
-      const descriptionLines = doc
-        .splitTextToSize(product.description, CARD_WIDTH)
-        .slice(0, 2);
-      textY += 1.5;
-      doc.text(descriptionLines, x, textY);
-      textY += descriptionLines.length * 3.2;
-    }
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(...ROSE);
-    doc.text(formatPrice(product.price), x, textY + 5.5);
-
-    column += 1;
-    if (column === COLUMNS) {
-      column = 0;
-      cursorY += CARD_HEIGHT;
-    }
+  const doc = new jsPDF({
+    unit: 'mm',
+    format: 'a4',
+    compress: true,
+    // No arrastra al archivo las tipografías que no se llegan a usar.
+    putOnlyUsedFonts: true,
   });
 
-  // ---------- Pies, cuando ya se sabe cuántas hojas hay ----------
+
+  // El logo es opcional: si no está el archivo, la portada usa solo texto.
+  const logo = await embedImage('/images/logo.webp', 1);
+  const images = await Promise.all(
+    visible.map((product) => embedImage(product.imageUrl, IMAGE_WIDTH / IMAGE_HEIGHT)),
+  );
+
+  const center = PAGE.width / 2;
+
+  // ============ Hoja 1: solo la portada ============
+  // Marco doble, como el de un diploma: acompaña al sello dorado del
+  // logo sin competir con él.
+  doc.setDrawColor(...FRAME);
+  doc.setLineWidth(1.2);
+  doc.rect(10, 10, PAGE.width - 20, PAGE.height - 20, 'S');
+  doc.setLineWidth(0.4);
+  doc.rect(13.5, 13.5, PAGE.width - 27, PAGE.height - 27, 'S');
+  doc.setLineWidth(0.2);
+
+  if (logo) {
+    const size = 88;
+    doc.addImage(logo.dataUrl, logo.format, center - size / 2, 32, size, size);
+  }
+
+  // Serif en negrita y con las letras separadas: se lee de un vistazo y
+  // acompaña al sello dorado del logo. Una caligráfica en mayúsculas
+  // quedaba preciosa de lejos e ilegible de cerca.
+  doc.setTextColor(...ROSE);
+  doc.setFont('times', 'bold');
+  doc.setFontSize(50);
+  doc.setCharSpace(1.2);
+  doc.text(SHOP.fullName.toUpperCase(), center, logo ? 146 : 124, { align: 'center' });
+  doc.setCharSpace(0);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(16);
+  doc.setTextColor(...STONE);
+  doc.text('Flores eternas hechas a mano', center, logo ? 158 : 134, { align: 'center' });
+
+  // Filete corto para separar la marca de los datos de contacto.
+  const dividerY = logo ? 170 : 146;
+  doc.setDrawColor(...FRAME);
+  doc.setLineWidth(0.6);
+  doc.line(center - 32, dividerY, center + 32, dividerY);
+  doc.setLineWidth(0.2);
+
+  doc.setFontSize(15);
+  doc.setTextColor(...STONE);
+  doc.text(`WhatsApp ${SHOP.phoneDisplay}`, center, dividerY + 14, { align: 'center' });
+
+  doc.setFontSize(13);
+  doc.setTextColor(...GREY);
+  doc.text(SHOP.siteUrl, center, dividerY + 23, { align: 'center' });
+
+  doc.setFontSize(11);
+  doc.setTextColor(...GREY);
+  doc.text('Tingo María', center, PAGE.height - 34, { align: 'center' });
+
+  // ============ Hojas siguientes: los productos ============
+  let row = 0;
+
+  visible.forEach((product, index) => {
+    if (row === 0) doc.addPage();
+
+    const top = MARGIN + row * (ROW_HEIGHT + ROW_GAP);
+    const picture = images[index];
+
+    // Zigzag: la foto va a la izquierda, a la derecha, a la izquierda...
+    // La vista rebota de un lado a otro y la hoja deja de parecer una
+    // lista para parecer un catálogo.
+    const mirrored = row % 2 === 1;
+    const imageX = mirrored ? MARGIN + TEXT_WIDTH + IMAGE_TEXT_GAP : MARGIN;
+    const textX = mirrored ? MARGIN : TEXT_X;
+
+    // --- Foto grande, con marco ---
+    if (picture) {
+      doc.addImage(picture.dataUrl, picture.format, imageX, top, IMAGE_WIDTH, IMAGE_HEIGHT);
+
+      // El marco va 1,5 mm por fuera: enmarca sin comerse ni un píxel
+      // de la foto, como el pase de un cuadro.
+      doc.setDrawColor(...FRAME);
+      doc.setLineWidth(0.7);
+      doc.rect(imageX - 1.5, top - 1.5, IMAGE_WIDTH + 3, IMAGE_HEIGHT + 3, 'S');
+      doc.setLineWidth(0.2);
+    } else {
+      doc.setFillColor(250, 240, 236);
+      doc.rect(imageX, top, IMAGE_WIDTH, IMAGE_HEIGHT, 'F');
+      doc.setFontSize(10);
+      doc.setTextColor(...GREY);
+      doc.text('Sin foto', imageX + IMAGE_WIDTH / 2, top + IMAGE_HEIGHT / 2, { align: 'center' });
+    }
+
+    // --- Texto al otro lado ---
+    let textY = top + 9;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(...STONE);
+    const nameLines = doc.splitTextToSize(product.name, TEXT_WIDTH).slice(0, 2);
+    doc.text(nameLines, textX, textY);
+    textY += nameLines.length * 8.8;
+
+    if (product.description) {
+      // Serif y en gris oscuro: la Helvetica clara se perdía sobre el
+      // papel blanco, sobre todo impresa.
+      doc.setFont('times', 'normal');
+      doc.setFontSize(17);
+      doc.setTextColor(...STONE);
+
+      // Los saltos de línea que escribes en el panel se respetan aquí:
+      // cada renglón se parte por separado y luego se ajusta al ancho.
+      // En la web siguen colapsando, que es como debe verse una tarjeta.
+      const descriptionLines = product.description
+        .split(/\r?\n/)
+        .flatMap((line) =>
+          line.trim() === '' ? [''] : (doc.splitTextToSize(line, TEXT_WIDTH) as string[]),
+        )
+        .slice(0, MAX_DESCRIPTION_LINES);
+
+      textY += 3;
+      doc.text(descriptionLines, textX, textY);
+      textY += descriptionLines.length * 7.4;
+    }
+
+    textY += 7;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(...ROSE);
+    doc.text(formatPrice(product.price), textX, textY);
+
+    row = (row + 1) % PRODUCTS_PER_PAGE;
+  });
+
+  // ============ Pies de página (la portada no lleva) ============
   const total = doc.getNumberOfPages();
-  for (let page = 1; page <= total; page += 1) {
+  for (let page = 2; page <= total; page += 1) {
     doc.setPage(page);
-    drawFooter(page, total);
+
+    const y = PAGE.height - FOOTER_SPACE;
+    doc.setDrawColor(238, 215, 205);
+    doc.line(MARGIN, FOOTER_LINE_Y, PAGE.width - MARGIN, FOOTER_LINE_Y);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...GREY);
+    doc.text(`${SHOP.fullName} · WhatsApp ${SHOP.phoneDisplay}`, MARGIN, y);
+    doc.text(`${page - 1} / ${total - 1}`, PAGE.width - MARGIN, y, { align: 'right' });
   }
 
   const stamp = new Date().toISOString().slice(0, 10);

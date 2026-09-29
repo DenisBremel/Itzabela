@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { formatPrice } from '@/utils/format';
+import { formatPrice, inlineDescription } from '@/utils/format';
 import { buildProductWhatsAppUrl, buildSoldOutWhatsAppUrl } from '@/utils/whatsapp';
 import { isAvailable, type Product } from '@/types/product';
 import { cn } from '@/utils/cn';
@@ -79,7 +79,9 @@ export function ProductCard({ product, eager = false, onZoom }: ProductCardProps
         <h3 className="font-display text-2xl leading-snug font-semibold text-stone-900">
           {product.name}
         </h3>
-        <p className="mt-2 flex-1 text-sm leading-relaxed text-stone-600">{product.description}</p>
+        <p className="mt-2 flex-1 text-sm leading-relaxed text-stone-600">
+          {inlineDescription(product.description)}
+        </p>
 
         <p className="mt-4 text-2xl font-semibold text-rose-700">{formatPrice(product.price)}</p>
 
